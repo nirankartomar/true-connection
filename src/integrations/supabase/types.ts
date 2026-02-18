@@ -14,7 +14,120 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      connections: {
+        Row: {
+          category: string
+          connected_at: string
+          connected_user_id: string
+          id: string
+          is_active: boolean
+          removed_at: string | null
+          user_id: string
+        }
+        Insert: {
+          category: string
+          connected_at?: string
+          connected_user_id: string
+          id?: string
+          is_active?: boolean
+          removed_at?: string | null
+          user_id: string
+        }
+        Update: {
+          category?: string
+          connected_at?: string
+          connected_user_id?: string
+          id?: string
+          is_active?: boolean
+          removed_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_read: boolean
+          receiver_id: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          receiver_id: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          receiver_id?: string
+          sender_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio_what_i_am_doing: string | null
+          bio_who_i_am: string | null
+          bio_who_was_i: string | null
+          bio_who_will_i_be: string | null
+          city: string | null
+          created_at: string
+          email: string | null
+          full_name: string
+          gender: string | null
+          id: string
+          phone: string | null
+          pincode: string | null
+          state: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio_what_i_am_doing?: string | null
+          bio_who_i_am?: string | null
+          bio_who_was_i?: string | null
+          bio_who_will_i_be?: string | null
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          full_name: string
+          gender?: string | null
+          id?: string
+          phone?: string | null
+          pincode?: string | null
+          state?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio_what_i_am_doing?: string | null
+          bio_who_i_am?: string | null
+          bio_who_was_i?: string | null
+          bio_who_will_i_be?: string | null
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          gender?: string | null
+          id?: string
+          phone?: string | null
+          pincode?: string | null
+          state?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
