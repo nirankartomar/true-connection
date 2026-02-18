@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { Camera, ArrowLeft, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -15,6 +16,7 @@ const SignUp = () => {
     fullName: "",
     phone: "",
     email: "",
+    password: "",
     gender: "",
     pincode: "",
     city: "",
@@ -53,19 +55,40 @@ const SignUp = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.fullName || !form.phone || !form.email || !form.gender || !form.pincode || !form.city) {
+    if (!form.fullName || !form.email || !form.password || !form.gender || !form.pincode || !form.city) {
       toast({ title: "Missing Fields", description: "Please fill in all required fields.", variant: "destructive" });
       return;
     }
+    if (form.password.length < 6) {
+      toast({ title: "Weak Password", description: "Password must be at least 6 characters.", variant: "destructive" });
+      return;
+    }
     setLoading(true);
-    // Mock duplicate check
-    setTimeout(() => {
-      setLoading(false);
-      toast({ title: "Account Created", description: "Please complete your bio to activate your profile." });
-      navigate("/bio");
-    }, 1200);
+    const { error } = await supabase.auth.signUp({
+      email: form.email,
+      password: form.password,
+      options: {
+        emailRedirectTo: window.location.origin,
+        data: {
+          full_name: form.fullName,
+        },
+      },
+    });
+    setLoading(false);
+
+    if (error) {
+      toast({ title: "Sign Up Failed", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    // Update profile with extra info
+    toast({
+      title: "Account Created!",
+      description: "Please check your email to verify your account, then sign in.",
+    });
+    navigate("/signin");
   };
 
   return (
@@ -109,6 +132,11 @@ const SignUp = () => {
           <div className="space-y-2">
             <Label htmlFor="email">Email Address</Label>
             <Input id="email" type="email" placeholder="you@example.com" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <Input id="password" type="password" placeholder="••••••••" value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} />
           </div>
 
           <div className="space-y-2">

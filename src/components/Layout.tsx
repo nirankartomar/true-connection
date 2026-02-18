@@ -1,7 +1,8 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Users, Shield, LogOut, Menu, X } from "lucide-react";
+import { Users, Shield, LogOut, Menu, X, MessageCircle } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -10,12 +11,20 @@ interface LayoutProps {
 
 const Layout = ({ children, isAdmin }: LayoutProps) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const navItems = [
     { to: "/dashboard", label: "Connections", icon: Users },
+    { to: "/chat", label: "Chat", icon: MessageCircle },
     ...(isAdmin ? [{ to: "/admin", label: "Admin", icon: Shield }] : []),
   ];
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -25,7 +34,6 @@ const Layout = ({ children, isAdmin }: LayoutProps) => {
             Bonded
           </Link>
 
-          {/* Desktop nav */}
           <nav className="hidden items-center gap-1 md:flex">
             {navItems.map((item) => (
               <Link
@@ -42,16 +50,15 @@ const Layout = ({ children, isAdmin }: LayoutProps) => {
                 {item.label}
               </Link>
             ))}
-            <Link
-              to="/"
+            <button
+              onClick={handleSignOut}
               className="ml-2 flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
             >
               <LogOut className="h-4 w-4" />
               Sign Out
-            </Link>
+            </button>
           </nav>
 
-          {/* Mobile menu toggle */}
           <button
             className="md:hidden rounded-md p-2 text-muted-foreground hover:bg-muted"
             onClick={() => setMenuOpen(!menuOpen)}
@@ -60,7 +67,6 @@ const Layout = ({ children, isAdmin }: LayoutProps) => {
           </button>
         </div>
 
-        {/* Mobile nav */}
         {menuOpen && (
           <nav className="border-t bg-card p-4 md:hidden">
             <div className="flex flex-col gap-1">
@@ -80,14 +86,13 @@ const Layout = ({ children, isAdmin }: LayoutProps) => {
                   {item.label}
                 </Link>
               ))}
-              <Link
-                to="/"
-                onClick={() => setMenuOpen(false)}
+              <button
+                onClick={() => { setMenuOpen(false); handleSignOut(); }}
                 className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
               >
                 <LogOut className="h-4 w-4" />
                 Sign Out
-              </Link>
+              </button>
             </div>
           </nav>
         )}

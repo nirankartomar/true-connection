@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import ConnectionCard, { Connection } from "@/components/ConnectionCard";
 import { Button } from "@/components/ui/button";
@@ -7,62 +7,129 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Users, History } from "lucide-react";
+import { Plus, Users, History, MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
-
-const MOCK_CONNECTIONS: Connection[] = [
-  { id: "1", name: "Priya Sharma", category: "love", photo: "https://i.pravatar.cc/150?img=1", connectedAt: "Jan 2024", isActive: true },
-  { id: "2", name: "Rahul Verma", category: "friend", photo: "https://i.pravatar.cc/150?img=3", connectedAt: "Mar 2024", isActive: true },
-  { id: "3", name: "Anita Gupta", category: "family", photo: "https://i.pravatar.cc/150?img=5", connectedAt: "Jun 2024", isActive: true },
-  { id: "4", name: "Vikram Singh", category: "friend", photo: "https://i.pravatar.cc/150?img=8", connectedAt: "Aug 2023", removedAt: "Dec 2023", isActive: false },
-];
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { Link, useNavigate } from "react-router-dom";
 
 const MAX_CONNECTIONS = 5;
 
 const Dashboard = () => {
-  const [connections, setConnections] = useState<Connection[]>(MOCK_CONNECTIONS);
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const [connections, setConnections] = useState<Connection[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [newConn, setNewConn] = useState({ name: "", category: "" as string, email: "" });
+  const [newConn, setNewConn] = useState({ email: "", category: "" });
+  const [adding, setAdding] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && !user) navigate("/signin");
+  }, [user, authLoading]);
+
+  useEffect(() => {
+    if (!user) return;
+    fetchConnections();
+  }, [user]);
+
+  const fetchConnections = async () => {
+    if (!user) return;
+    const { data: conns } = await supabase
+      .from("connections")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("connected_at", { ascending: false });
+
+    if (!conns?.length) { setConnections([]); return; }
+
+    const otherIds = conns.map((c: any) => c.connected_user_id);
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("user_id, full_name, avatar_url")
+      .in("user_id", otherIds);
+
+    const profileMap: Record<string, any> = {};
+    profiles?.forEach((p: any) => { profileMap[p.user_id] = p; });
+
+    setConnections(
+      conns.map((c: any) => ({
+        id: c.id,
+        name: profileMap[c.connected_user_id]?.full_name || "Unknown",
+        category: c.category,
+        photo: profileMap[c.connected_user_id]?.avatar_url || `https://i.pravatar.cc/150?u=${c.connected_user_id}`,
+        connectedAt: new Date(c.connected_at).toLocaleDateString("en-US", { month: "short", year: "numeric" }),
+        removedAt: c.removed_at ? new Date(c.removed_at).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : undefined,
+        isActive: c.is_active,
+        connectedUserId: c.connected_user_id,
+      }))
+    );
+  };
 
   const active = connections.filter((c) => c.isActive);
   const history = connections.filter((c) => !c.isActive);
 
-  const handleRemove = (id: string) => {
-    setConnections((prev) =>
-      prev.map((c) =>
-        c.id === id ? { ...c, isActive: false, removedAt: new Date().toLocaleDateString("en-US", { month: "short", year: "numeric" }) } : c
-      )
-    );
-    toast({ title: "Connection Removed", description: "This connection has been moved to your history." });
+  const handleRemove = async (id: string) => {
+    await supabase
+      .from("connections")
+      .update({ is_active: false, removed_at: new Date().toISOString() })
+      .eq("id", id);
+    toast({ title: "Connection Removed", description: "Moved to history." });
+    fetchConnections();
   };
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (active.length >= MAX_CONNECTIONS) {
-      toast({
-        title: "Connection Limit Reached",
-        description: `You can only have ${MAX_CONNECTIONS} active connections. Remove one to add a new person.`,
-        variant: "destructive",
-      });
+      toast({ title: "Limit Reached", description: `Max ${MAX_CONNECTIONS} active connections.`, variant: "destructive" });
       return;
     }
-    if (!newConn.name || !newConn.category) {
+    if (!newConn.email || !newConn.category) {
       toast({ title: "Missing Fields", description: "Please fill in all fields.", variant: "destructive" });
       return;
     }
+    setAdding(true);
 
-    const conn: Connection = {
-      id: Date.now().toString(),
-      name: newConn.name,
-      category: newConn.category as Connection["category"],
-      photo: `https://i.pravatar.cc/150?u=${Date.now()}`,
-      connectedAt: new Date().toLocaleDateString("en-US", { month: "short", year: "numeric" }),
-      isActive: true,
-    };
-    setConnections((prev) => [...prev, conn]);
-    setNewConn({ name: "", category: "", email: "" });
+    // Find user by email
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("user_id")
+      .eq("email", newConn.email)
+      .single();
+
+    if (!profiles) {
+      toast({ title: "User Not Found", description: "No user with that email exists.", variant: "destructive" });
+      setAdding(false);
+      return;
+    }
+
+    if (profiles.user_id === user?.id) {
+      toast({ title: "Invalid", description: "You can't add yourself.", variant: "destructive" });
+      setAdding(false);
+      return;
+    }
+
+    const { error } = await supabase.from("connections").insert({
+      user_id: user!.id,
+      connected_user_id: profiles.user_id,
+      category: newConn.category,
+    });
+
+    setAdding(false);
+    if (error) {
+      if (error.code === "23505") {
+        toast({ title: "Already Connected", description: "This person is already in your circle.", variant: "destructive" });
+      } else {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+      }
+      return;
+    }
+
+    setNewConn({ email: "", category: "" });
     setDialogOpen(false);
-    toast({ title: "Connection Added", description: `${conn.name} has been added to your circle.` });
+    toast({ title: "Connection Added!" });
+    fetchConnections();
   };
+
+  if (authLoading) return null;
 
   return (
     <Layout isAdmin>
@@ -75,57 +142,57 @@ const Dashboard = () => {
               {active.length} of {MAX_CONNECTIONS} connections used
             </p>
           </div>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="hero" size="sm" className="gap-1">
-                <Plus className="h-4 w-4" /> Add
+          <div className="flex gap-2">
+            <Link to="/chat">
+              <Button variant="outline" size="sm" className="gap-1">
+                <MessageCircle className="h-4 w-4" /> Chat
               </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle className="font-display">Add Connection</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 pt-2">
-                <div className="space-y-2">
-                  <Label>Name</Label>
-                  <Input placeholder="Full name" value={newConn.name} onChange={(e) => setNewConn((n) => ({ ...n, name: e.target.value }))} />
+            </Link>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="hero" size="sm" className="gap-1">
+                  <Plus className="h-4 w-4" /> Add
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle className="font-display">Add Connection</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-2">
+                  <div className="space-y-2">
+                    <Label>Email of the person</Label>
+                    <Input type="email" placeholder="Their email on Bonded" value={newConn.email} onChange={(e) => setNewConn((n) => ({ ...n, email: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Category</Label>
+                    <Select value={newConn.category} onValueChange={(v) => setNewConn((n) => ({ ...n, category: v }))}>
+                      <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="love">❤️ Love</SelectItem>
+                        <SelectItem value="friend">👥 Friend</SelectItem>
+                        <SelectItem value="family">🏠 Family</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button onClick={handleAdd} className="w-full" disabled={adding}>
+                    {adding ? "Adding..." : "Add to Circle"}
+                  </Button>
                 </div>
-                <div className="space-y-2">
-                  <Label>Email</Label>
-                  <Input type="email" placeholder="Their email" value={newConn.email} onChange={(e) => setNewConn((n) => ({ ...n, email: e.target.value }))} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Category</Label>
-                  <Select value={newConn.category} onValueChange={(v) => setNewConn((n) => ({ ...n, category: v }))}>
-                    <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="love">❤️ Love</SelectItem>
-                      <SelectItem value="friend">👥 Friend</SelectItem>
-                      <SelectItem value="family">🏠 Family</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button onClick={handleAdd} className="w-full">Add to Circle</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
-        {/* Connection capacity indicator */}
+        {/* Capacity indicator */}
         <div className="mb-6 h-2 overflow-hidden rounded-full bg-muted">
-          <div
-            className="h-full rounded-full bg-accent transition-all duration-500"
-            style={{ width: `${(active.length / MAX_CONNECTIONS) * 100}%` }}
-          />
+          <div className="h-full rounded-full bg-accent transition-all duration-500" style={{ width: `${(active.length / MAX_CONNECTIONS) * 100}%` }} />
         </div>
 
         {/* Active Connections */}
         <section className="mb-10">
           <div className="mb-4 flex items-center gap-2">
             <Users className="h-4 w-4 text-muted-foreground" />
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-              Active Connections
-            </h2>
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Active Connections</h2>
           </div>
           {active.length === 0 ? (
             <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
@@ -134,12 +201,7 @@ const Dashboard = () => {
           ) : (
             <div className="grid gap-3">
               {active.map((c, i) => (
-                <motion.div
-                  key={c.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.08 }}
-                >
+                <motion.div key={c.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
                   <ConnectionCard connection={c} onRemove={handleRemove} />
                 </motion.div>
               ))}
@@ -152,9 +214,7 @@ const Dashboard = () => {
           <section>
             <div className="mb-4 flex items-center gap-2">
               <History className="h-4 w-4 text-muted-foreground" />
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                History
-              </h2>
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">History</h2>
             </div>
             <div className="grid gap-3">
               {history.map((c) => (
