@@ -64,7 +64,7 @@ const ConnectionCard = ({ connection, onRemove }: ConnectionCardProps) => {
             <Clock className="h-3 w-3" />
             {connection.isActive
               ? `Connected ${connection.connectedAt}`
-              : `Removed ${connection.removedAt}`}
+              : `${connection.connectedAt} — ${connection.removedAt}`}
           </div>
         </div>
         {connection.isActive && onRemove && (
