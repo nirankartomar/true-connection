@@ -49,11 +49,14 @@ export default function GenerateTokenDialog() {
     const token = generateSecureToken();
 
     let expiresAt: string | null = null;
-    if (expiresIn) {
-      const hours = parseInt(expiresIn);
-      if (hours > 0) {
-        expiresAt = new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
+    if (expiresIn && expiresIn !== "1use") {
+      const minutes = parseInt(expiresIn);
+      if (minutes > 0) {
+        expiresAt = new Date(Date.now() + minutes * 60 * 1000).toISOString();
       }
+    } else if (expiresIn === "1use") {
+      // 1-time use: expires in 10 minutes as a safety net
+      expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
     }
 
     const { error } = await supabase.from("connection_tokens" as any).insert({
@@ -147,10 +150,12 @@ export default function GenerateTokenDialog() {
                   <SelectValue placeholder="No expiry" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">1 hour</SelectItem>
-                  <SelectItem value="24">24 hours</SelectItem>
-                  <SelectItem value="168">7 days</SelectItem>
-                  <SelectItem value="720">30 days</SelectItem>
+                  <SelectItem value="1use">1-time use (10 min window)</SelectItem>
+                  <SelectItem value="5">5 minutes</SelectItem>
+                  <SelectItem value="60">1 hour</SelectItem>
+                  <SelectItem value="1440">24 hours</SelectItem>
+                  <SelectItem value="10080">7 days</SelectItem>
+                  <SelectItem value="43200">30 days</SelectItem>
                 </SelectContent>
               </Select>
             </div>
