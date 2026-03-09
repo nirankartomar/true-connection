@@ -134,6 +134,22 @@ Deno.serve(async (req) => {
         return json({ error: "The token owner has reached their connection limit." });
       }
 
+      // ATOMIC CLAIM: mark token as used only if still active — prevents race conditions
+      const { data: claimed, error: claimError } = await supabaseAdmin
+        .from("connection_tokens")
+        .update({
+          status: "used",
+          used_at: new Date().toISOString(),
+          used_by_user_id: user.id,
+        })
+        .eq("id", tokenData.id)
+        .eq("status", "active") // Only succeeds if still active
+        .select("id");
+
+      if (claimError || !claimed || claimed.length === 0) {
+        return json({ error: "Token is invalid or already used." });
+      }
+
       const categoryMap: Record<string, string> = {
         friend: "friend",
         family: "family",
@@ -148,16 +164,14 @@ Deno.serve(async (req) => {
         is_active: true,
       });
 
-      if (connError) return json({ error: connError.message });
-
-      await supabaseAdmin
-        .from("connection_tokens")
-        .update({
-          status: "used",
-          used_at: new Date().toISOString(),
-          used_by_user_id: user.id,
-        })
-        .eq("id", tokenData.id);
+      if (connError) {
+        // Rollback: revert token back to active if connection failed
+        await supabaseAdmin
+          .from("connection_tokens")
+          .update({ status: "active", used_at: null, used_by_user_id: null })
+          .eq("id", tokenData.id);
+        return json({ error: connError.message });
+      }
 
       return json({ success: true });
     }
