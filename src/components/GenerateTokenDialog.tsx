@@ -33,7 +33,7 @@ export default function GenerateTokenDialog() {
   const [open, setOpen] = useState(false);
   const [relationshipType, setRelationshipType] = useState("");
   const [intentMessage, setIntentMessage] = useState("");
-  const [expiresIn, setExpiresIn] = useState("");
+  const [expiresIn, setExpiresIn] = useState("1use");
   const [generatedToken, setGeneratedToken] = useState("");
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -91,7 +91,7 @@ export default function GenerateTokenDialog() {
     if (!isOpen) {
       setRelationshipType("");
       setIntentMessage("");
-      setExpiresIn("");
+      setExpiresIn("1use"); // Reset to default 1-time use
       setGeneratedToken("");
       setCopied(false);
     }
@@ -155,7 +155,6 @@ export default function GenerateTokenDialog() {
                   <SelectItem value="60">1 hour</SelectItem>
                   <SelectItem value="1440">24 hours</SelectItem>
                   <SelectItem value="10080">7 days</SelectItem>
-                  <SelectItem value="43200">30 days</SelectItem>
                 </SelectContent>
               </Select>
             </div>
