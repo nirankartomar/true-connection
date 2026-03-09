@@ -157,6 +157,11 @@ const Chat = () => {
 
   const selectedContact = contacts.find((c) => c.user_id === selectedUserId);
 
+  const webrtc = useWebRTC({
+    userId: user?.id || "",
+    remoteUserId: selectedUserId || "",
+  });
+
   const getInitials = (name: string) =>
     name
       .split(" ")
