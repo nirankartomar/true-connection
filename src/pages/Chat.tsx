@@ -309,8 +309,24 @@ const Chat = () => {
                       e.preventDefault();
                       handleSend();
                     }}
-                    className="flex gap-2"
+                    className="flex gap-2 items-center"
                   >
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button type="button" size="icon" variant="ghost" className="shrink-0">
+                          <Smile className="h-5 w-5 text-muted-foreground" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent side="top" align="start" className="w-auto p-0 border-none shadow-xl">
+                        <Picker
+                          data={data}
+                          onEmojiSelect={(emoji: any) => setNewMessage((prev) => prev + emoji.native)}
+                          theme="auto"
+                          previewPosition="none"
+                          skinTonePosition="search"
+                        />
+                      </PopoverContent>
+                    </Popover>
                     <Input
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
