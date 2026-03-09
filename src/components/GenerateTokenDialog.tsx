@@ -33,7 +33,7 @@ export default function GenerateTokenDialog() {
   const [open, setOpen] = useState(false);
   const [relationshipType, setRelationshipType] = useState("");
   const [intentMessage, setIntentMessage] = useState("");
-  const [expiresIn, setExpiresIn] = useState("1use");
+  const [expiresIn, setExpiresIn] = useState("1");
   const [generatedToken, setGeneratedToken] = useState("");
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -49,14 +49,11 @@ export default function GenerateTokenDialog() {
     const token = generateSecureToken();
 
     let expiresAt: string | null = null;
-    if (expiresIn && expiresIn !== "1use") {
+    if (expiresIn) {
       const minutes = parseInt(expiresIn);
       if (minutes > 0) {
         expiresAt = new Date(Date.now() + minutes * 60 * 1000).toISOString();
       }
-    } else if (expiresIn === "1use") {
-      // 1-time use: expires in 10 minutes as a safety net
-      expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
     }
 
     const { error } = await supabase.from("connection_tokens" as any).insert({
@@ -91,7 +88,7 @@ export default function GenerateTokenDialog() {
     if (!isOpen) {
       setRelationshipType("");
       setIntentMessage("");
-      setExpiresIn("1use"); // Reset to default 1-time use
+      setExpiresIn("1"); // Reset to default 1 minute
       setGeneratedToken("");
       setCopied(false);
     }
@@ -150,7 +147,7 @@ export default function GenerateTokenDialog() {
                   <SelectValue placeholder="No expiry" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1use">1-time use (10 min window)</SelectItem>
+                  <SelectItem value="1">1 minute</SelectItem>
                   <SelectItem value="5">5 minutes</SelectItem>
                   <SelectItem value="60">1 hour</SelectItem>
                   <SelectItem value="1440">24 hours</SelectItem>
