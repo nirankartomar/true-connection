@@ -97,12 +97,13 @@ const Profile = () => {
   const location = [profile.city, profile.state].filter(Boolean).join(", ");
   const memberSince = new Date(profile.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
-  const bioSections = [
+  const allBioSections = [
     { title: "Who I Was", content: profile.bio_who_was_i },
     { title: "Who I Am", content: profile.bio_who_i_am },
     { title: "Who I Will Be", content: profile.bio_who_will_i_be },
     { title: "What I Am Doing", content: profile.bio_what_i_am_doing },
-  ].filter((s) => s.content);
+  ];
+  const bioSections = isOwn ? allBioSections : allBioSections.filter((s) => s.content);
 
   return (
     <Layout>
