@@ -64,9 +64,55 @@ Deno.serve(async (req) => {
 
       const { data: profile } = await supabaseAdmin
         .from("profiles")
-        .select("full_name, avatar_url, city, state, gender, bio_who_i_am")
+        .select("full_name, avatar_url, city, state, gender, bio_who_i_am, bio_who_was_i, bio_who_will_i_be, bio_what_i_am_doing")
         .eq("user_id", tokenOnly.owner_user_id)
         .single();
+
+      // Fetch active connections of the token owner
+      const { data: activeConns } = await supabaseAdmin
+        .from("connections")
+        .select("id, category, connected_at, connected_user_id, user_id")
+        .or(`user_id.eq.${tokenOnly.owner_user_id},connected_user_id.eq.${tokenOnly.owner_user_id}`)
+        .eq("is_active", true)
+        .eq("status", "accepted");
+
+      // Fetch history (inactive) connections
+      const { data: historyConns } = await supabaseAdmin
+        .from("connections")
+        .select("id, category, connected_at, removed_at, connected_user_id, user_id")
+        .or(`user_id.eq.${tokenOnly.owner_user_id},connected_user_id.eq.${tokenOnly.owner_user_id}`)
+        .eq("is_active", false);
+
+      // Get profile info for connected users
+      const allConnUserIds = new Set<string>();
+      for (const c of [...(activeConns || []), ...(historyConns || [])]) {
+        const otherId = c.user_id === tokenOnly.owner_user_id ? c.connected_user_id : c.user_id;
+        allConnUserIds.add(otherId);
+      }
+
+      let connProfiles: Record<string, { full_name: string; avatar_url: string | null }> = {};
+      if (allConnUserIds.size > 0) {
+        const { data: profiles } = await supabaseAdmin
+          .from("profiles")
+          .select("user_id, full_name, avatar_url")
+          .in("user_id", Array.from(allConnUserIds));
+        for (const p of profiles || []) {
+          connProfiles[p.user_id] = { full_name: p.full_name, avatar_url: p.avatar_url };
+        }
+      }
+
+      const mapConn = (c: any) => {
+        const otherId = c.user_id === tokenOnly.owner_user_id ? c.connected_user_id : c.user_id;
+        const p = connProfiles[otherId];
+        return {
+          id: c.id,
+          category: c.category,
+          connected_at: c.connected_at,
+          removed_at: c.removed_at || null,
+          name: p?.full_name || "Unknown",
+          avatar_url: p?.avatar_url || null,
+        };
+      };
 
       return json({
         token_id: tokenOnly.id,
@@ -74,6 +120,8 @@ Deno.serve(async (req) => {
         relationship_type: tokenOnly.relationship_type,
         intent_message: tokenOnly.intent_message,
         profile: profile || null,
+        active_connections: (activeConns || []).map(mapConn),
+        history_connections: (historyConns || []).map(mapConn),
       });
     }
 
