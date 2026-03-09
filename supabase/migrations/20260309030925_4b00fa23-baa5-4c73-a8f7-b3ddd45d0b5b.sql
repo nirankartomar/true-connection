@@ -1,0 +1,1 @@
+ALTER TABLE public.connections DROP CONSTRAINT IF EXISTS connections_user_id_connected_user_id_key;
