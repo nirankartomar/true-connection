@@ -88,8 +88,8 @@ const Dashboard = () => {
           name: p?.full_name || "Unknown",
           category: c.category,
           photo: p?.avatar_url || `https://i.pravatar.cc/150?u=${otherId}`,
-          connectedAt: new Date(c.connected_at).toLocaleDateString("en-US", { month: "short", year: "numeric" }),
-          removedAt: c.removed_at ? new Date(c.removed_at).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : undefined,
+          connectedAt: new Date(c.connected_at).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" }),
+          removedAt: c.removed_at ? new Date(c.removed_at).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" }) : undefined,
           isActive: c.is_active,
           connectedUserId: otherId,
         });
