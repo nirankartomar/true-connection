@@ -29,28 +29,31 @@ interface ProfileData {
 }
 
 const Profile = () => {
-  const { userId } = useParams<{ userId: string }>();
+  const { userId: paramUserId } = useParams<{ userId: string }>();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isConnection, setIsConnection] = useState(false);
 
+  const targetUserId = paramUserId || user?.id;
+
   useEffect(() => {
-    if (!userId) return;
+    if (!targetUserId) return;
     const load = async () => {
       setLoading(true);
       const { data } = await supabase
         .from("profiles")
         .select("*")
-        .eq("user_id", userId)
+        .eq("user_id", targetUserId)
         .single();
       setProfile(data);
 
-      if (user && user.id !== userId) {
+      if (user && user.id !== targetUserId) {
         const { data: conn } = await supabase
           .from("connections")
           .select("id")
-          .or(`and(user_id.eq.${user.id},connected_user_id.eq.${userId}),and(user_id.eq.${userId},connected_user_id.eq.${user.id})`)
+          .or(`and(user_id.eq.${user.id},connected_user_id.eq.${targetUserId}),and(user_id.eq.${targetUserId},connected_user_id.eq.${user.id})`)
           .eq("is_active", true)
           .eq("status", "accepted" as any)
           .limit(1);
@@ -59,7 +62,7 @@ const Profile = () => {
       setLoading(false);
     };
     load();
-  }, [userId, user]);
+  }, [targetUserId, user]);
 
   const isOwn = user?.id === userId;
 
