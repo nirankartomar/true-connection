@@ -180,6 +180,24 @@ const Chat = () => {
 
   return (
     <Layout isAdmin={false}>
+      {selectedContact && (
+        <CallUI
+          callState={webrtc.callState}
+          callType={webrtc.callType}
+          isMuted={webrtc.isMuted}
+          isVideoOff={webrtc.isVideoOff}
+          callDuration={webrtc.callDuration}
+          contactName={selectedContact.full_name}
+          contactAvatar={selectedContact.avatar_url}
+          localVideoRef={webrtc.localVideoRef}
+          remoteVideoRef={webrtc.remoteVideoRef}
+          onAccept={webrtc.acceptCall}
+          onReject={webrtc.rejectCall}
+          onEnd={webrtc.endCall}
+          onToggleMute={webrtc.toggleMute}
+          onToggleVideo={webrtc.toggleVideo}
+        />
+      )}
       <div className="container max-w-4xl py-4">
         <div className="flex h-[calc(100vh-8rem)] overflow-hidden rounded-lg border bg-card">
           {/* Contacts sidebar */}
