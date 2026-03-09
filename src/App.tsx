@@ -13,6 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import BioSetup from "./pages/BioSetup";
 import Admin from "./pages/Admin";
 import Chat from "./pages/Chat";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
