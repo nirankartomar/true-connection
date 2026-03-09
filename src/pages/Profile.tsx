@@ -52,6 +52,7 @@ const Profile = () => {
           .select("id")
           .or(`and(user_id.eq.${user.id},connected_user_id.eq.${userId}),and(user_id.eq.${userId},connected_user_id.eq.${user.id})`)
           .eq("is_active", true)
+          .eq("status", "accepted" as any)
           .limit(1);
         setIsConnection((conn?.length ?? 0) > 0);
       }

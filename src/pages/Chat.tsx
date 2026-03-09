@@ -44,8 +44,9 @@ const Chat = () => {
     const fetchContacts = async () => {
       const { data: connections } = await supabase
         .from("connections")
-        .select("connected_user_id, category, user_id")
+        .select("connected_user_id, category, user_id, status")
         .eq("is_active", true)
+        .eq("status", "accepted" as any)
         .or(`user_id.eq.${user.id},connected_user_id.eq.${user.id}`);
 
       if (!connections?.length) return;
