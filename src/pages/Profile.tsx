@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { MapPin, Mail, Phone, ArrowLeft, MessageCircle, Calendar } from "lucide-react";
+import { MapPin, Mail, Phone, ArrowLeft, MessageCircle, Calendar, Pencil } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface ProfileData {
