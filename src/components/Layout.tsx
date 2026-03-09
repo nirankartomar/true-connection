@@ -18,6 +18,7 @@ const Layout = ({ children, isAdmin }: LayoutProps) => {
   const navItems = [
     { to: "/dashboard", label: "Connections", icon: Users },
     { to: "/chat", label: "Chat", icon: MessageCircle },
+    { to: "/profile", label: "My Profile", icon: User },
     ...(isAdmin ? [{ to: "/admin", label: "Admin", icon: Shield }] : []),
   ];
 
