@@ -49,14 +49,11 @@ export default function GenerateTokenDialog() {
     const token = generateSecureToken();
 
     let expiresAt: string | null = null;
-    if (expiresIn && expiresIn !== "1use") {
+    if (expiresIn) {
       const minutes = parseInt(expiresIn);
       if (minutes > 0) {
         expiresAt = new Date(Date.now() + minutes * 60 * 1000).toISOString();
       }
-    } else if (expiresIn === "1use") {
-      // 1-time use: expires in 10 minutes as a safety net
-      expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
     }
 
     const { error } = await supabase.from("connection_tokens" as any).insert({
