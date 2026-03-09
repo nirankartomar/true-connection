@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { MapPin, Mail, Phone, ArrowLeft, MessageCircle, Calendar, Pencil } from "lucide-react";
 import { motion } from "framer-motion";
+import GenerateTokenDialog from "@/components/GenerateTokenDialog";
 
 interface ProfileData {
   user_id: string;
