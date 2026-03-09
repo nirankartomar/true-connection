@@ -97,39 +97,18 @@ Deno.serve(async (req) => {
         return json({ error: "This token has expired." });
       }
 
-      // Check existing connection (active or inactive)
+      // Check for existing ACTIVE connection only
       const { data: existing } = await supabaseAdmin
         .from("connections")
-        .select("id, is_active, status")
+        .select("id")
         .or(
           `and(user_id.eq.${tokenData.owner_user_id},connected_user_id.eq.${user.id}),and(user_id.eq.${user.id},connected_user_id.eq.${tokenData.owner_user_id})`
         )
+        .eq("is_active", true)
         .limit(1);
 
       if (existing && existing.length > 0) {
-        const conn = existing[0];
-        if (conn.is_active) {
-          return json({ error: "You already have an active connection with this person." });
-        }
-        // Reactivate the existing connection with new category
-        const categoryMap: Record<string, string> = { friend: "friend", family: "family", lover: "love" };
-        await supabaseAdmin
-          .from("connections")
-          .update({
-            is_active: true,
-            status: "accepted",
-            category: categoryMap[tokenData.relationship_type] || tokenData.relationship_type,
-            removed_at: null,
-            connected_at: new Date().toISOString(),
-          })
-          .eq("id", conn.id);
-
-        await supabaseAdmin
-          .from("connection_tokens")
-          .update({ status: "used", used_at: new Date().toISOString(), used_by_user_id: user.id })
-          .eq("id", tokenData.id);
-
-        return json({ success: true });
+        return json({ error: "You already have an active connection with this person." });
       }
 
       // Check 5-connection limit
