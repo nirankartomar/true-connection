@@ -8,8 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Users, History, MessageCircle, Inbox } from "lucide-react";
+import { Plus, Users, History, MessageCircle, Inbox, KeyRound } from "lucide-react";
 import { motion } from "framer-motion";
+import UseTokenInput from "@/components/UseTokenInput";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Link, useNavigate } from "react-router-dom";
@@ -248,6 +249,11 @@ const Dashboard = () => {
               </DialogContent>
             </Dialog>
           </div>
+        </div>
+
+        {/* Use Token */}
+        <div className="mb-6">
+          <UseTokenInput />
         </div>
 
         {/* Capacity indicator */}

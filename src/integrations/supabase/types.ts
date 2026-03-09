@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      connection_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          intent_message: string | null
+          owner_user_id: string
+          relationship_type: string
+          status: string
+          token: string
+          used_at: string | null
+          used_by_user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          intent_message?: string | null
+          owner_user_id: string
+          relationship_type: string
+          status?: string
+          token: string
+          used_at?: string | null
+          used_by_user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          intent_message?: string | null
+          owner_user_id?: string
+          relationship_type?: string
+          status?: string
+          token?: string
+          used_at?: string | null
+          used_by_user_id?: string | null
+        }
+        Relationships: []
+      }
       connections: {
         Row: {
           category: string

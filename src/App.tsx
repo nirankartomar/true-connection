@@ -14,6 +14,7 @@ import BioSetup from "./pages/BioSetup";
 import Admin from "./pages/Admin";
 import Chat from "./pages/Chat";
 import Profile from "./pages/Profile";
+import ConnectToken from "./pages/ConnectToken";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/chat" element={<Chat />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/profile/:userId" element={<Profile />} />
+            <Route path="/connect/:token" element={<ConnectToken />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
