@@ -155,7 +155,6 @@ export default function GenerateTokenDialog() {
                   <SelectItem value="60">1 hour</SelectItem>
                   <SelectItem value="1440">24 hours</SelectItem>
                   <SelectItem value="10080">7 days</SelectItem>
-                  <SelectItem value="43200">30 days</SelectItem>
                 </SelectContent>
               </Select>
             </div>
