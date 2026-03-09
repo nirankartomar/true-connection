@@ -14,6 +14,7 @@ export interface Connection {
   connectedAt: string;
   removedAt?: string;
   isActive: boolean;
+  connectedUserId?: string;
 }
 
 const categoryConfig: Record<ConnectionCategory, { icon: typeof Heart; label: string; colorClass: string }> = {
