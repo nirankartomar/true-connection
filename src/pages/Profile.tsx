@@ -185,15 +185,47 @@ const Profile = () => {
           {bioSections.length > 0 && (
             <Card className="mt-4">
               <CardContent className="py-5 space-y-5">
+                <h2 className="font-display text-base font-semibold">My Story</h2>
                 {bioSections.map((section, i) => (
                   <div key={section.title}>
                     {i > 0 && <Separator className="mb-5" />}
                     <h3 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-2">
                       {section.title}
                     </h3>
-                    <p className="text-sm leading-relaxed">{section.content}</p>
+                    {section.content ? (
+                      <p className="text-sm leading-relaxed">{section.content}</p>
+                    ) : (
+                      <p className="text-sm italic text-muted-foreground">
+                        Not filled in yet.{" "}
+                        <Link to="/bio" className="text-accent hover:underline">Add it now →</Link>
+                      </p>
+                    )}
                   </div>
                 ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Empty bio prompt for own profile */}
+          {isOwn && bioSections.every((s) => !s.content) && (
+            <Card className="mt-4">
+              <CardContent className="py-8 text-center">
+                <p className="text-sm text-muted-foreground mb-3">You haven't written your story yet.</p>
+                <Link to="/bio">
+                  <Button variant="hero" size="sm">Write Your Bio</Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* No avatar prompt */}
+          {isOwn && !profile.avatar_url && (
+            <Card className="mt-4">
+              <CardContent className="py-5 text-center">
+                <p className="text-sm text-muted-foreground mb-3">Add a profile photo so connections can recognise you.</p>
+                <Link to="/bio">
+                  <Button variant="outline" size="sm">Upload Photo</Button>
+                </Link>
               </CardContent>
             </Card>
           )}
