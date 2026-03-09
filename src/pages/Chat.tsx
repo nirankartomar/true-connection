@@ -256,11 +256,31 @@ const Chat = () => {
                       {getInitials(selectedContact.full_name)}
                     </AvatarFallback>
                   </Avatar>
-                  <div>
+                  <div className="flex-1">
                     <p className="text-sm font-medium">{selectedContact.full_name}</p>
                     <p className="text-xs text-muted-foreground">
                       {categoryEmoji[selectedContact.category]} {selectedContact.category}
                     </p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 text-muted-foreground hover:text-accent"
+                      onClick={() => webrtc.startCall("voice")}
+                      disabled={webrtc.callState !== "idle"}
+                    >
+                      <Phone className="h-5 w-5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 text-muted-foreground hover:text-accent"
+                      onClick={() => webrtc.startCall("video")}
+                      disabled={webrtc.callState !== "idle"}
+                    >
+                      <Video className="h-5 w-5" />
+                    </Button>
                   </div>
                 </div>
 
