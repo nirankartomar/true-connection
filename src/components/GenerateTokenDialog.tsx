@@ -88,7 +88,7 @@ export default function GenerateTokenDialog() {
     if (!isOpen) {
       setRelationshipType("");
       setIntentMessage("");
-      setExpiresIn("1use"); // Reset to default 1-time use
+      setExpiresIn("1"); // Reset to default 1 minute
       setGeneratedToken("");
       setCopied(false);
     }
