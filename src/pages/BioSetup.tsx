@@ -1,22 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { CheckCircle2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 const BIO_SECTIONS = [
-  { key: "whoWasI", title: "Who was I", placeholder: "Reflect on who you were — your past self, beliefs, and journey...", maxLength: 300 },
-  { key: "whoIAm", title: "Who I am", placeholder: "Describe who you are today — your values, passions, and identity...", maxLength: 300 },
-  { key: "whoWillIBe", title: "Who will I be", placeholder: "Envision your future self — your aspirations and the person you're becoming...", maxLength: 300 },
-  { key: "whatIAmDoing", title: "What I am doing to become who I will be", placeholder: "Share the actions and habits you're building to reach your future self...", maxLength: 400 },
+  { key: "whoWasI", dbKey: "bio_who_was_i", title: "Who was I", placeholder: "Reflect on who you were — your past self, beliefs, and journey...", maxLength: 300 },
+  { key: "whoIAm", dbKey: "bio_who_i_am", title: "Who I am", placeholder: "Describe who you are today — your values, passions, and identity...", maxLength: 300 },
+  { key: "whoWillIBe", dbKey: "bio_who_will_i_be", title: "Who will I be", placeholder: "Envision your future self — your aspirations and the person you're becoming...", maxLength: 300 },
+  { key: "whatIAmDoing", dbKey: "bio_what_i_am_doing", title: "What I am doing to become who I will be", placeholder: "Share the actions and habits you're building to reach your future self...", maxLength: 400 },
 ] as const;
 
 type BioKey = (typeof BIO_SECTIONS)[number]["key"];
 
 const BioSetup = () => {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [bio, setBio] = useState<Record<BioKey, string>>({
     whoWasI: "",
     whoIAm: "",
@@ -24,24 +27,71 @@ const BioSetup = () => {
     whatIAmDoing: "",
   });
   const [currentStep, setCurrentStep] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  // Load existing bio data
+  useEffect(() => {
+    if (!user) return;
+    const load = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("bio_who_was_i, bio_who_i_am, bio_who_will_i_be, bio_what_i_am_doing")
+        .eq("user_id", user.id)
+        .single();
+
+      if (data) {
+        setBio({
+          whoWasI: data.bio_who_was_i || "",
+          whoIAm: data.bio_who_i_am || "",
+          whoWillIBe: data.bio_who_will_i_be || "",
+          whatIAmDoing: data.bio_what_i_am_doing || "",
+        });
+      }
+      setLoaded(true);
+    };
+    load();
+  }, [user]);
+
+  useEffect(() => {
+    if (!authLoading && !user) navigate("/signin");
+  }, [user, authLoading]);
 
   const current = BIO_SECTIONS[currentStep];
   const isLast = currentStep === BIO_SECTIONS.length - 1;
   const value = bio[current.key];
   const isValid = value.trim().length >= 20;
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!isValid) {
       toast({ title: "Too Short", description: "Please write at least 20 characters.", variant: "destructive" });
       return;
     }
     if (isLast) {
+      setSaving(true);
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          bio_who_was_i: bio.whoWasI.trim(),
+          bio_who_i_am: bio.whoIAm.trim(),
+          bio_who_will_i_be: bio.whoWillIBe.trim(),
+          bio_what_i_am_doing: bio.whatIAmDoing.trim(),
+        })
+        .eq("user_id", user!.id);
+      setSaving(false);
+
+      if (error) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+        return;
+      }
       toast({ title: "Bio Complete", description: "Your profile is now active!" });
-      navigate("/dashboard");
+      navigate("/profile");
     } else {
       setCurrentStep((s) => s + 1);
     }
   };
+
+  if (authLoading || !loaded) return null;
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
@@ -96,8 +146,8 @@ const BioSetup = () => {
               Back
             </Button>
           )}
-          <Button className="flex-1" onClick={handleNext} disabled={!isValid}>
-            {isLast ? "Activate Profile" : "Continue"}
+          <Button className="flex-1" onClick={handleNext} disabled={!isValid || saving}>
+            {saving ? "Saving..." : isLast ? "Activate Profile" : "Continue"}
           </Button>
         </div>
       </div>
