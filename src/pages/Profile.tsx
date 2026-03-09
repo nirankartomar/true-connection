@@ -30,7 +30,7 @@ interface ProfileData {
 
 const Profile = () => {
   const { userId: paramUserId } = useParams<{ userId: string }>();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
