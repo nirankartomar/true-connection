@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { Heart, Users, Home, Clock, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 export type ConnectionCategory = "love" | "friend" | "family";
 
@@ -12,6 +13,7 @@ export interface Connection {
   connectedAt: string;
   removedAt?: string;
   isActive: boolean;
+  connectedUserId?: string;
 }
 
 const categoryConfig: Record<ConnectionCategory, { icon: typeof Heart; label: string; colorClass: string }> = {
@@ -47,7 +49,13 @@ const ConnectionCard = ({ connection, onRemove }: ConnectionCardProps) => {
           />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-sm truncate">{connection.name}</h3>
+          <h3 className="font-medium text-sm truncate">
+            {connection.connectedUserId ? (
+              <Link to={`/profile/${connection.connectedUserId}`} className="hover:underline">
+                {connection.name}
+              </Link>
+            ) : connection.name}
+          </h3>
           <div className={cn("mt-1 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium", config.colorClass)}>
             <Icon className="h-3 w-3" />
             {config.label}
