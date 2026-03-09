@@ -39,7 +39,11 @@ const Profile = () => {
   const targetUserId = paramUserId || user?.id;
 
   useEffect(() => {
-    if (!targetUserId) return;
+    if (authLoading) return;
+    if (!targetUserId) {
+      navigate("/signin");
+      return;
+    }
     const load = async () => {
       setLoading(true);
       const { data } = await supabase
