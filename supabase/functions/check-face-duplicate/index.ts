@@ -109,7 +109,7 @@ Rules:
     });
 
     // Call Gemini via Lovable AI Gateway
-    const aiRes = await fetch("https://api.lovable.app/v1/chat/completions", {
+    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
