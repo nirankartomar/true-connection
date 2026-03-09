@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { MapPin, Mail, Phone, ArrowLeft, MessageCircle, Calendar } from "lucide-react";
+import { MapPin, Mail, Phone, ArrowLeft, MessageCircle, Calendar, Pencil } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface ProfileData {
@@ -29,28 +29,31 @@ interface ProfileData {
 }
 
 const Profile = () => {
-  const { userId } = useParams<{ userId: string }>();
+  const { userId: paramUserId } = useParams<{ userId: string }>();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isConnection, setIsConnection] = useState(false);
 
+  const targetUserId = paramUserId || user?.id;
+
   useEffect(() => {
-    if (!userId) return;
+    if (!targetUserId) return;
     const load = async () => {
       setLoading(true);
       const { data } = await supabase
         .from("profiles")
         .select("*")
-        .eq("user_id", userId)
+        .eq("user_id", targetUserId)
         .single();
       setProfile(data);
 
-      if (user && user.id !== userId) {
+      if (user && user.id !== targetUserId) {
         const { data: conn } = await supabase
           .from("connections")
           .select("id")
-          .or(`and(user_id.eq.${user.id},connected_user_id.eq.${userId}),and(user_id.eq.${userId},connected_user_id.eq.${user.id})`)
+          .or(`and(user_id.eq.${user.id},connected_user_id.eq.${targetUserId}),and(user_id.eq.${targetUserId},connected_user_id.eq.${user.id})`)
           .eq("is_active", true)
           .eq("status", "accepted" as any)
           .limit(1);
@@ -59,9 +62,9 @@ const Profile = () => {
       setLoading(false);
     };
     load();
-  }, [userId, user]);
+  }, [targetUserId, user]);
 
-  const isOwn = user?.id === userId;
+  const isOwn = user?.id === targetUserId;
 
   if (loading) {
     return (
@@ -137,6 +140,13 @@ const Profile = () => {
                   </div>
                 </div>
 
+                {isOwn && (
+                  <Link to="/bio">
+                    <Button variant="outline" size="sm" className="gap-1 mt-3 sm:mt-0">
+                      <Pencil className="h-4 w-4" /> Edit Profile
+                    </Button>
+                  </Link>
+                )}
                 {!isOwn && isConnection && (
                   <Link to="/chat">
                     <Button variant="hero" size="sm" className="gap-1 mt-3 sm:mt-0">
