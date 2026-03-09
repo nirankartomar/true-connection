@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, ArrowLeft, MessageCircle, Smile } from "lucide-react";
+import { Send, ArrowLeft, MessageCircle, Smile, Phone, Video } from "lucide-react";
+import { useWebRTC } from "@/hooks/useWebRTC";
+import CallUI from "@/components/CallUI";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import data from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
@@ -155,6 +157,11 @@ const Chat = () => {
 
   const selectedContact = contacts.find((c) => c.user_id === selectedUserId);
 
+  const webrtc = useWebRTC({
+    userId: user?.id || "",
+    remoteUserId: selectedUserId || "",
+  });
+
   const getInitials = (name: string) =>
     name
       .split(" ")
@@ -173,6 +180,24 @@ const Chat = () => {
 
   return (
     <Layout isAdmin={false}>
+      {selectedContact && (
+        <CallUI
+          callState={webrtc.callState}
+          callType={webrtc.callType}
+          isMuted={webrtc.isMuted}
+          isVideoOff={webrtc.isVideoOff}
+          callDuration={webrtc.callDuration}
+          contactName={selectedContact.full_name}
+          contactAvatar={selectedContact.avatar_url}
+          localVideoRef={webrtc.localVideoRef}
+          remoteVideoRef={webrtc.remoteVideoRef}
+          onAccept={webrtc.acceptCall}
+          onReject={webrtc.rejectCall}
+          onEnd={webrtc.endCall}
+          onToggleMute={webrtc.toggleMute}
+          onToggleVideo={webrtc.toggleVideo}
+        />
+      )}
       <div className="container max-w-4xl py-4">
         <div className="flex h-[calc(100vh-8rem)] overflow-hidden rounded-lg border bg-card">
           {/* Contacts sidebar */}
@@ -249,11 +274,31 @@ const Chat = () => {
                       {getInitials(selectedContact.full_name)}
                     </AvatarFallback>
                   </Avatar>
-                  <div>
+                  <div className="flex-1">
                     <p className="text-sm font-medium">{selectedContact.full_name}</p>
                     <p className="text-xs text-muted-foreground">
                       {categoryEmoji[selectedContact.category]} {selectedContact.category}
                     </p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 text-muted-foreground hover:text-accent"
+                      onClick={() => webrtc.startCall("voice")}
+                      disabled={webrtc.callState !== "idle"}
+                    >
+                      <Phone className="h-5 w-5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 text-muted-foreground hover:text-accent"
+                      onClick={() => webrtc.startCall("video")}
+                      disabled={webrtc.callState !== "idle"}
+                    >
+                      <Video className="h-5 w-5" />
+                    </Button>
                   </div>
                 </div>
 

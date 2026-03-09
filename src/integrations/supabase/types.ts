@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      call_signals: {
+        Row: {
+          call_type: string
+          caller_id: string
+          created_at: string
+          id: string
+          receiver_id: string
+          signal_data: Json | null
+          signal_type: string
+        }
+        Insert: {
+          call_type?: string
+          caller_id: string
+          created_at?: string
+          id?: string
+          receiver_id: string
+          signal_data?: Json | null
+          signal_type: string
+        }
+        Update: {
+          call_type?: string
+          caller_id?: string
+          created_at?: string
+          id?: string
+          receiver_id?: string
+          signal_data?: Json | null
+          signal_type?: string
+        }
+        Relationships: []
+      }
       connection_tokens: {
         Row: {
           created_at: string
