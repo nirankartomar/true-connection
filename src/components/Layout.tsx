@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Users, Shield, LogOut, Menu, X, MessageCircle } from "lucide-react";
+import { Users, Shield, LogOut, Menu, X, MessageCircle, User } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 
