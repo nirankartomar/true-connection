@@ -30,7 +30,7 @@ interface ProfileData {
 
 const Profile = () => {
   const { userId: paramUserId } = useParams<{ userId: string }>();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -39,7 +39,11 @@ const Profile = () => {
   const targetUserId = paramUserId || user?.id;
 
   useEffect(() => {
-    if (!targetUserId) return;
+    if (authLoading) return;
+    if (!targetUserId) {
+      navigate("/signin");
+      return;
+    }
     const load = async () => {
       setLoading(true);
       const { data } = await supabase
@@ -62,7 +66,7 @@ const Profile = () => {
       setLoading(false);
     };
     load();
-  }, [targetUserId, user]);
+  }, [targetUserId, user, authLoading]);
 
   const isOwn = user?.id === targetUserId;
 
