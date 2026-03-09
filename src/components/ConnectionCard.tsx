@@ -50,7 +50,7 @@ const ConnectionCard = ({ connection, onRemove }: ConnectionCardProps) => {
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="font-medium text-sm truncate">
-            {connection.connectedUserId ? (
+            {connection.connectedUserId && connection.isActive ? (
               <Link to={`/profile/${connection.connectedUserId}`} className="hover:underline">
                 {connection.name}
               </Link>
