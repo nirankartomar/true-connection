@@ -33,7 +33,7 @@ export default function GenerateTokenDialog() {
   const [open, setOpen] = useState(false);
   const [relationshipType, setRelationshipType] = useState("");
   const [intentMessage, setIntentMessage] = useState("");
-  const [expiresIn, setExpiresIn] = useState("1use");
+  const [expiresIn, setExpiresIn] = useState("1");
   const [generatedToken, setGeneratedToken] = useState("");
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
