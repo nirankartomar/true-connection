@@ -7,7 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, ArrowLeft, MessageCircle } from "lucide-react";
+import { Send, ArrowLeft, MessageCircle, Smile } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import data from "@emoji-mart/data";
+import Picker from "@emoji-mart/react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -306,8 +309,24 @@ const Chat = () => {
                       e.preventDefault();
                       handleSend();
                     }}
-                    className="flex gap-2"
+                    className="flex gap-2 items-center"
                   >
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button type="button" size="icon" variant="ghost" className="shrink-0">
+                          <Smile className="h-5 w-5 text-muted-foreground" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent side="top" align="start" className="w-auto p-0 border-none shadow-xl">
+                        <Picker
+                          data={data}
+                          onEmojiSelect={(emoji: any) => setNewMessage((prev) => prev + emoji.native)}
+                          theme="auto"
+                          previewPosition="none"
+                          skinTonePosition="search"
+                        />
+                      </PopoverContent>
+                    </Popover>
                     <Input
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
