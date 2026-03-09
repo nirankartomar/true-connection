@@ -65,7 +65,7 @@ const Admin = () => {
   };
 
   return (
-    <Layout isAdmin>
+    <Layout isAdmin={true}>
       <div className="container py-8">
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-1">

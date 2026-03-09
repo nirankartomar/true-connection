@@ -200,7 +200,7 @@ const Dashboard = () => {
   if (authLoading) return null;
 
   return (
-    <Layout isAdmin>
+    <Layout isAdmin={false}>
       <div className="container max-w-2xl py-8">
         {/* Status bar */}
         <div className="mb-8 flex items-center justify-between">

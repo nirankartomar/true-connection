@@ -15,12 +15,13 @@ const Layout = ({ children, isAdmin }: LayoutProps) => {
   const { signOut } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const navItems = [
-    { to: "/dashboard", label: "Connections", icon: Users },
-    { to: "/chat", label: "Chat", icon: MessageCircle },
-    { to: "/profile", label: "My Profile", icon: User },
-    ...(isAdmin ? [{ to: "/admin", label: "Admin", icon: Shield }] : []),
-  ];
+  const navItems = isAdmin
+    ? [{ to: "/admin", label: "Admin", icon: Shield }]
+    : [
+        { to: "/dashboard", label: "Connections", icon: Users },
+        { to: "/chat", label: "Chat", icon: MessageCircle },
+        { to: "/profile", label: "My Profile", icon: User },
+      ];
 
   const handleSignOut = async () => {
     await signOut();
