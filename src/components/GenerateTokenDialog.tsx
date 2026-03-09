@@ -147,7 +147,7 @@ export default function GenerateTokenDialog() {
                   <SelectValue placeholder="No expiry" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1use">1-time use (10 min window)</SelectItem>
+                  <SelectItem value="1">1 minute</SelectItem>
                   <SelectItem value="5">5 minutes</SelectItem>
                   <SelectItem value="60">1 hour</SelectItem>
                   <SelectItem value="1440">24 hours</SelectItem>
