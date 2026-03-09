@@ -38,6 +38,7 @@ const App = () => (
             <Route path="/chat" element={<Chat />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/profile/:userId" element={<Profile />} />
+            <Route path="/connect/:token" element={<ConnectToken />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

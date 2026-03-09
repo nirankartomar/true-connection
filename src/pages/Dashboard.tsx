@@ -251,6 +251,11 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {/* Use Token */}
+        <div className="mb-6">
+          <UseTokenInput />
+        </div>
+
         {/* Capacity indicator */}
         <div className="mb-6 h-2 overflow-hidden rounded-full bg-muted">
           <div className="h-full rounded-full bg-accent transition-all duration-500" style={{ width: `${(active.length / MAX_CONNECTIONS) * 100}%` }} />

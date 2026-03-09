@@ -147,11 +147,14 @@ const Profile = () => {
                 </div>
 
                 {isOwn && (
-                  <Link to="/bio">
-                    <Button variant="outline" size="sm" className="gap-1 mt-3 sm:mt-0">
-                      <Pencil className="h-4 w-4" /> Edit Profile
-                    </Button>
-                  </Link>
+                  <div className="flex gap-2 mt-3 sm:mt-0">
+                    <GenerateTokenDialog />
+                    <Link to="/bio">
+                      <Button variant="outline" size="sm" className="gap-1">
+                        <Pencil className="h-4 w-4" /> Edit Profile
+                      </Button>
+                    </Link>
+                  </div>
                 )}
                 {!isOwn && isConnection && (
                   <Link to="/chat">
