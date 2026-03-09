@@ -14,6 +14,7 @@ import BioSetup from "./pages/BioSetup";
 import Admin from "./pages/Admin";
 import Chat from "./pages/Chat";
 import Profile from "./pages/Profile";
+import ConnectToken from "./pages/ConnectToken";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
