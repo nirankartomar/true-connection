@@ -66,7 +66,7 @@ const Profile = () => {
       setLoading(false);
     };
     load();
-  }, [targetUserId, user]);
+  }, [targetUserId, user, authLoading]);
 
   const isOwn = user?.id === targetUserId;
 
