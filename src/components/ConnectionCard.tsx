@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { Heart, Users, Home, Clock, X } from "lucide-react";
+import { Heart, Users, Home, Clock, X, ChartLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
@@ -67,16 +67,29 @@ const ConnectionCard = ({ connection, onRemove }: ConnectionCardProps) => {
               : `${connection.connectedAt} — ${connection.removedAt}`}
           </div>
         </div>
-        {connection.isActive && onRemove && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
-            onClick={() => onRemove(connection.id)}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        )}
+        <div className="flex items-center gap-1">
+          {connection.isActive && connection.connectedUserId && (
+            <Link to={`/connection/${connection.connectedUserId}/timeline`}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-accent"
+              >
+                <ChartLine className="h-4 w-4" />
+              </Button>
+            </Link>
+          )}
+          {connection.isActive && onRemove && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+              onClick={() => onRemove(connection.id)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
       {!connection.isActive && (
         <div className="mt-2 rounded bg-muted px-2 py-1 text-xs text-muted-foreground italic">
