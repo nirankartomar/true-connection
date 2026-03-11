@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { MapPin, Mail, Phone, ArrowLeft, MessageCircle, Calendar, Pencil } from "lucide-react";
+import { MapPin, Mail, Phone, ArrowLeft, MessageCircle, Calendar, Pencil, Camera, Loader2 } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import GenerateTokenDialog from "@/components/GenerateTokenDialog";
 
@@ -69,7 +70,30 @@ const Profile = () => {
     load();
   }, [targetUserId, user, authLoading]);
 
+  const [uploading, setUploading] = useState(false);
   const isOwn = user?.id === targetUserId;
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    setUploading(true);
+    try {
+      const fileExt = file.name.split(".").pop() || "jpg";
+      const filePath = `${user.id}/avatar.${fileExt}`;
+      const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, file, { upsert: true, contentType: file.type });
+      if (uploadError) throw uploadError;
+      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
+      if (urlData?.publicUrl) {
+        const avatarUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+        await supabase.from("profiles").update({ avatar_url: avatarUrl }).eq("user_id", user.id);
+        setProfile((p) => p ? { ...p, avatar_url: avatarUrl } : p);
+        toast({ title: "Photo updated!" });
+      }
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    }
+    setUploading(false);
+  };
 
   if (loading) {
     return (
@@ -123,14 +147,26 @@ const Profile = () => {
             <div className="h-24 bg-gradient-to-r from-primary/20 to-accent/20" />
             <CardContent className="relative pb-6">
               <div className="-mt-12 flex flex-col items-center sm:flex-row sm:items-end sm:gap-5">
-                <Avatar className="h-24 w-24 border-4 border-card shadow-lg">
-                  {profile.avatar_url ? (
-                    <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
-                  ) : null}
-                  <AvatarFallback className="text-lg font-semibold bg-secondary text-secondary-foreground">
-                    {initials}
-                  </AvatarFallback>
-                </Avatar>
+                <div className="relative group">
+                  <Avatar className="h-24 w-24 border-4 border-card shadow-lg">
+                    {profile.avatar_url ? (
+                      <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
+                    ) : null}
+                    <AvatarFallback className="text-lg font-semibold bg-secondary text-secondary-foreground">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                  {isOwn && (
+                    <label className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {uploading ? (
+                        <Loader2 className="h-6 w-6 animate-spin text-white" />
+                      ) : (
+                        <Camera className="h-6 w-6 text-white" />
+                      )}
+                      <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploading} />
+                    </label>
+                  )}
+                </div>
 
                 <div className="mt-3 text-center sm:mt-0 sm:text-left flex-1">
                   <h1 className="font-display text-2xl font-bold">{profile.full_name}</h1>
@@ -226,17 +262,6 @@ const Profile = () => {
             </Card>
           )}
 
-          {/* No avatar prompt */}
-          {isOwn && !profile.avatar_url && (
-            <Card className="mt-4">
-              <CardContent className="py-5 text-center">
-                <p className="text-sm text-muted-foreground mb-3">Add a profile photo so connections can recognise you.</p>
-                <Link to="/bio">
-                  <Button variant="outline" size="sm">Upload Photo</Button>
-                </Link>
-              </CardContent>
-            </Card>
-          )}
         </motion.div>
       </div>
     </Layout>
