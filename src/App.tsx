@@ -41,6 +41,7 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
             <Route path="/profile/:userId" element={<Profile />} />
             <Route path="/connect/:token" element={<ConnectToken />} />
+            <Route path="/connection/:connectedUserId/timeline" element={<ConnectionTimeline />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
