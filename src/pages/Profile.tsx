@@ -72,6 +72,11 @@ const Profile = () => {
   }, [targetUserId, user, authLoading]);
 
   const [uploading, setUploading] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editBio, setEditBio] = useState<Record<string, string>>({});
+  const [savingBio, setSavingBio] = useState(false);
+  const [bioHistory, setBioHistory] = useState<Array<{ field_name: string; old_value: string; new_value: string; changed_at: string }>>([]);
+  const [showHistory, setShowHistory] = useState(false);
   const isOwn = user?.id === targetUserId;
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
