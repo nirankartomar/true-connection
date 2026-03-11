@@ -70,7 +70,30 @@ const Profile = () => {
     load();
   }, [targetUserId, user, authLoading]);
 
+  const [uploading, setUploading] = useState(false);
   const isOwn = user?.id === targetUserId;
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    setUploading(true);
+    try {
+      const fileExt = file.name.split(".").pop() || "jpg";
+      const filePath = `${user.id}/avatar.${fileExt}`;
+      const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, file, { upsert: true, contentType: file.type });
+      if (uploadError) throw uploadError;
+      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
+      if (urlData?.publicUrl) {
+        const avatarUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+        await supabase.from("profiles").update({ avatar_url: avatarUrl }).eq("user_id", user.id);
+        setProfile((p) => p ? { ...p, avatar_url: avatarUrl } : p);
+        toast({ title: "Photo updated!" });
+      }
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    }
+    setUploading(false);
+  };
 
   if (loading) {
     return (
