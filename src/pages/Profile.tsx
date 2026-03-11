@@ -132,13 +132,110 @@ const Profile = () => {
   const location = [profile.city, profile.state].filter(Boolean).join(", ");
   const memberSince = new Date(profile.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
-  const allBioSections = [
-    { title: "Who I Was", content: profile.bio_who_was_i },
-    { title: "Who I Am", content: profile.bio_who_i_am },
-    { title: "Who I Will Be", content: profile.bio_who_will_i_be },
-    { title: "What I Am Doing", content: profile.bio_what_i_am_doing },
-  ];
+  const bioFields = [
+    { key: "bio_who_was_i", title: "Who I Was" },
+    { key: "bio_who_i_am", title: "Who I Am" },
+    { key: "bio_who_will_i_be", title: "Who I Will Be" },
+    { key: "bio_what_i_am_doing", title: "What I Am Doing" },
+  ] as const;
+
+  const allBioSections = bioFields.map((f) => ({
+    ...f,
+    content: profile[f.key as keyof ProfileData] as string | null,
+  }));
   const bioSections = isOwn ? allBioSections : allBioSections.filter((s) => s.content);
+
+  const startEditing = () => {
+    setEditBio({
+      bio_who_was_i: profile.bio_who_was_i || "",
+      bio_who_i_am: profile.bio_who_i_am || "",
+      bio_who_will_i_be: profile.bio_who_will_i_be || "",
+      bio_what_i_am_doing: profile.bio_what_i_am_doing || "",
+    });
+    setEditing(true);
+  };
+
+  const cancelEditing = () => {
+    setEditing(false);
+    setEditBio({});
+  };
+
+  const saveEdits = async () => {
+    if (!user || !profile) return;
+    setSavingBio(true);
+
+    // Find changed fields and log history
+    const historyInserts: Array<{ user_id: string; field_name: string; old_value: string; new_value: string }> = [];
+    const fieldLabels: Record<string, string> = {
+      bio_who_was_i: "Who I Was",
+      bio_who_i_am: "Who I Am",
+      bio_who_will_i_be: "Who I Will Be",
+      bio_what_i_am_doing: "What I Am Doing",
+    };
+
+    for (const key of Object.keys(editBio)) {
+      const oldVal = (profile[key as keyof ProfileData] as string) || "";
+      const newVal = editBio[key].trim();
+      if (oldVal !== newVal && (oldVal || newVal)) {
+        historyInserts.push({
+          user_id: user.id,
+          field_name: fieldLabels[key] || key,
+          old_value: oldVal,
+          new_value: newVal,
+        });
+      }
+    }
+
+    if (historyInserts.length === 0) {
+      setEditing(false);
+      setSavingBio(false);
+      return;
+    }
+
+    // Save history entries
+    await supabase.from("profile_bio_history").insert(historyInserts);
+
+    // Update profile
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        bio_who_was_i: editBio.bio_who_was_i.trim() || null,
+        bio_who_i_am: editBio.bio_who_i_am.trim() || null,
+        bio_who_will_i_be: editBio.bio_who_will_i_be.trim() || null,
+        bio_what_i_am_doing: editBio.bio_what_i_am_doing.trim() || null,
+      })
+      .eq("user_id", user.id);
+
+    if (error) {
+      toast({ title: "Error saving", description: error.message, variant: "destructive" });
+    } else {
+      setProfile((p) =>
+        p
+          ? {
+              ...p,
+              bio_who_was_i: editBio.bio_who_was_i.trim() || null,
+              bio_who_i_am: editBio.bio_who_i_am.trim() || null,
+              bio_who_will_i_be: editBio.bio_who_will_i_be.trim() || null,
+              bio_what_i_am_doing: editBio.bio_what_i_am_doing.trim() || null,
+            }
+          : p
+      );
+      toast({ title: "Bio updated!" });
+      setEditing(false);
+    }
+    setSavingBio(false);
+  };
+
+  const loadHistory = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("profile_bio_history")
+      .select("field_name, old_value, new_value, changed_at")
+      .eq("user_id", user.id)
+      .order("changed_at", { ascending: false });
+    setBioHistory(data || []);
+    setShowHistory(!showHistory);
+  };
 
   return (
     <Layout>
