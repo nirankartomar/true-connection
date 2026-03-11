@@ -332,19 +332,49 @@ const Profile = () => {
           {bioSections.length > 0 && (
             <Card className="mt-4">
               <CardContent className="py-5 space-y-5">
-                <h2 className="font-display text-base font-semibold">My Story</h2>
+                <div className="flex items-center justify-between">
+                  <h2 className="font-display text-base font-semibold">My Story</h2>
+                  {isOwn && !editing && (
+                    <div className="flex gap-2">
+                      <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground" onClick={loadHistory}>
+                        <History className="h-4 w-4" /> History
+                      </Button>
+                      <Button variant="ghost" size="sm" className="gap-1" onClick={startEditing}>
+                        <Pencil className="h-4 w-4" /> Edit
+                      </Button>
+                    </div>
+                  )}
+                  {isOwn && editing && (
+                    <div className="flex gap-2">
+                      <Button variant="ghost" size="sm" onClick={cancelEditing} disabled={savingBio}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                      <Button variant="default" size="sm" className="gap-1" onClick={saveEdits} disabled={savingBio}>
+                        {savingBio ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Save
+                      </Button>
+                    </div>
+                  )}
+                </div>
                 {bioSections.map((section, i) => (
-                  <div key={section.title}>
+                  <div key={section.key}>
                     {i > 0 && <Separator className="mb-5" />}
                     <h3 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-2">
                       {section.title}
                     </h3>
-                    {section.content ? (
+                    {editing ? (
+                      <Textarea
+                        value={editBio[section.key] || ""}
+                        onChange={(e) => setEditBio((b) => ({ ...b, [section.key]: e.target.value }))}
+                        maxLength={section.key === "bio_what_i_am_doing" ? 400 : 300}
+                        rows={3}
+                        className="resize-none"
+                      />
+                    ) : section.content ? (
                       <p className="text-sm leading-relaxed">{section.content}</p>
                     ) : (
                       <p className="text-sm italic text-muted-foreground">
                         Not filled in yet.{" "}
-                        <Link to="/bio" className="text-accent hover:underline">Add it now →</Link>
+                        <button onClick={startEditing} className="text-accent hover:underline">Add it now →</button>
                       </p>
                     )}
                   </div>
@@ -353,8 +383,40 @@ const Profile = () => {
             </Card>
           )}
 
+          {/* History */}
+          {isOwn && showHistory && bioHistory.length > 0 && (
+            <Card className="mt-4">
+              <CardContent className="py-5 space-y-4">
+                <h2 className="font-display text-base font-semibold">Edit History</h2>
+                {bioHistory.map((entry, i) => (
+                  <div key={i} className="text-sm space-y-1">
+                    {i > 0 && <Separator className="mb-4" />}
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-muted-foreground uppercase tracking-wider text-xs">{entry.field_name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(entry.changed_at).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}
+                      </span>
+                    </div>
+                    {entry.old_value && (
+                      <p className="text-muted-foreground line-through">{entry.old_value}</p>
+                    )}
+                    <p>{entry.new_value}</p>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {isOwn && showHistory && bioHistory.length === 0 && (
+            <Card className="mt-4">
+              <CardContent className="py-6 text-center text-sm text-muted-foreground">
+                No edit history yet.
+              </CardContent>
+            </Card>
+          )}
+
           {/* Empty bio prompt for own profile */}
-          {isOwn && bioSections.every((s) => !s.content) && (
+          {isOwn && !editing && bioSections.every((s) => !s.content) && (
             <Card className="mt-4">
               <CardContent className="py-8 text-center">
                 <p className="text-sm text-muted-foreground mb-3">You haven't written your story yet.</p>
