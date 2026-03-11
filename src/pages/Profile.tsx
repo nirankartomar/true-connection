@@ -262,17 +262,6 @@ const Profile = () => {
             </Card>
           )}
 
-          {/* No avatar prompt */}
-          {isOwn && !profile.avatar_url && (
-            <Card className="mt-4">
-              <CardContent className="py-5 text-center">
-                <p className="text-sm text-muted-foreground mb-3">Add a profile photo so connections can recognise you.</p>
-                <Link to="/bio">
-                  <Button variant="outline" size="sm">Upload Photo</Button>
-                </Link>
-              </CardContent>
-            </Card>
-          )}
         </motion.div>
       </div>
     </Layout>
