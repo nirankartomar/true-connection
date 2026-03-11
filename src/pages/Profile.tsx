@@ -147,14 +147,26 @@ const Profile = () => {
             <div className="h-24 bg-gradient-to-r from-primary/20 to-accent/20" />
             <CardContent className="relative pb-6">
               <div className="-mt-12 flex flex-col items-center sm:flex-row sm:items-end sm:gap-5">
-                <Avatar className="h-24 w-24 border-4 border-card shadow-lg">
-                  {profile.avatar_url ? (
-                    <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
-                  ) : null}
-                  <AvatarFallback className="text-lg font-semibold bg-secondary text-secondary-foreground">
-                    {initials}
-                  </AvatarFallback>
-                </Avatar>
+                <div className="relative group">
+                  <Avatar className="h-24 w-24 border-4 border-card shadow-lg">
+                    {profile.avatar_url ? (
+                      <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
+                    ) : null}
+                    <AvatarFallback className="text-lg font-semibold bg-secondary text-secondary-foreground">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                  {isOwn && (
+                    <label className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {uploading ? (
+                        <Loader2 className="h-6 w-6 animate-spin text-white" />
+                      ) : (
+                        <Camera className="h-6 w-6 text-white" />
+                      )}
+                      <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploading} />
+                    </label>
+                  )}
+                </div>
 
                 <div className="mt-3 text-center sm:mt-0 sm:text-left flex-1">
                   <h1 className="font-display text-2xl font-bold">{profile.full_name}</h1>
