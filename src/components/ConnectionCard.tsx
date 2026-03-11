@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { Heart, Users, Home, Clock, X } from "lucide-react";
+import { Heart, Users, Home, Clock, X, ChartLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
