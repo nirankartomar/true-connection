@@ -143,6 +143,33 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_bio_history: {
+        Row: {
+          changed_at: string
+          field_name: string
+          id: string
+          new_value: string
+          old_value: string
+          user_id: string
+        }
+        Insert: {
+          changed_at?: string
+          field_name: string
+          id?: string
+          new_value: string
+          old_value: string
+          user_id: string
+        }
+        Update: {
+          changed_at?: string
+          field_name?: string
+          id?: string
+          new_value?: string
+          old_value?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

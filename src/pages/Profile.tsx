@@ -6,9 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { MapPin, Mail, Phone, ArrowLeft, MessageCircle, Calendar, Pencil, Camera, Loader2 } from "lucide-react";
+import { MapPin, Mail, Phone, ArrowLeft, MessageCircle, Calendar, Pencil, Camera, Loader2, Check, X, History } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import GenerateTokenDialog from "@/components/GenerateTokenDialog";
@@ -71,6 +72,11 @@ const Profile = () => {
   }, [targetUserId, user, authLoading]);
 
   const [uploading, setUploading] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editBio, setEditBio] = useState<Record<string, string>>({});
+  const [savingBio, setSavingBio] = useState(false);
+  const [bioHistory, setBioHistory] = useState<Array<{ field_name: string; old_value: string; new_value: string; changed_at: string }>>([]);
+  const [showHistory, setShowHistory] = useState(false);
   const isOwn = user?.id === targetUserId;
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -126,13 +132,110 @@ const Profile = () => {
   const location = [profile.city, profile.state].filter(Boolean).join(", ");
   const memberSince = new Date(profile.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
-  const allBioSections = [
-    { title: "Who I Was", content: profile.bio_who_was_i },
-    { title: "Who I Am", content: profile.bio_who_i_am },
-    { title: "Who I Will Be", content: profile.bio_who_will_i_be },
-    { title: "What I Am Doing", content: profile.bio_what_i_am_doing },
-  ];
+  const bioFields = [
+    { key: "bio_who_was_i", title: "Who I Was" },
+    { key: "bio_who_i_am", title: "Who I Am" },
+    { key: "bio_who_will_i_be", title: "Who I Will Be" },
+    { key: "bio_what_i_am_doing", title: "What I Am Doing" },
+  ] as const;
+
+  const allBioSections = bioFields.map((f) => ({
+    ...f,
+    content: profile[f.key as keyof ProfileData] as string | null,
+  }));
   const bioSections = isOwn ? allBioSections : allBioSections.filter((s) => s.content);
+
+  const startEditing = () => {
+    setEditBio({
+      bio_who_was_i: profile.bio_who_was_i || "",
+      bio_who_i_am: profile.bio_who_i_am || "",
+      bio_who_will_i_be: profile.bio_who_will_i_be || "",
+      bio_what_i_am_doing: profile.bio_what_i_am_doing || "",
+    });
+    setEditing(true);
+  };
+
+  const cancelEditing = () => {
+    setEditing(false);
+    setEditBio({});
+  };
+
+  const saveEdits = async () => {
+    if (!user || !profile) return;
+    setSavingBio(true);
+
+    // Find changed fields and log history
+    const historyInserts: Array<{ user_id: string; field_name: string; old_value: string; new_value: string }> = [];
+    const fieldLabels: Record<string, string> = {
+      bio_who_was_i: "Who I Was",
+      bio_who_i_am: "Who I Am",
+      bio_who_will_i_be: "Who I Will Be",
+      bio_what_i_am_doing: "What I Am Doing",
+    };
+
+    for (const key of Object.keys(editBio)) {
+      const oldVal = (profile[key as keyof ProfileData] as string) || "";
+      const newVal = editBio[key].trim();
+      if (oldVal !== newVal && (oldVal || newVal)) {
+        historyInserts.push({
+          user_id: user.id,
+          field_name: fieldLabels[key] || key,
+          old_value: oldVal,
+          new_value: newVal,
+        });
+      }
+    }
+
+    if (historyInserts.length === 0) {
+      setEditing(false);
+      setSavingBio(false);
+      return;
+    }
+
+    // Save history entries
+    await supabase.from("profile_bio_history").insert(historyInserts);
+
+    // Update profile
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        bio_who_was_i: editBio.bio_who_was_i.trim() || null,
+        bio_who_i_am: editBio.bio_who_i_am.trim() || null,
+        bio_who_will_i_be: editBio.bio_who_will_i_be.trim() || null,
+        bio_what_i_am_doing: editBio.bio_what_i_am_doing.trim() || null,
+      })
+      .eq("user_id", user.id);
+
+    if (error) {
+      toast({ title: "Error saving", description: error.message, variant: "destructive" });
+    } else {
+      setProfile((p) =>
+        p
+          ? {
+              ...p,
+              bio_who_was_i: editBio.bio_who_was_i.trim() || null,
+              bio_who_i_am: editBio.bio_who_i_am.trim() || null,
+              bio_who_will_i_be: editBio.bio_who_will_i_be.trim() || null,
+              bio_what_i_am_doing: editBio.bio_what_i_am_doing.trim() || null,
+            }
+          : p
+      );
+      toast({ title: "Bio updated!" });
+      setEditing(false);
+    }
+    setSavingBio(false);
+  };
+
+  const loadHistory = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("profile_bio_history")
+      .select("field_name, old_value, new_value, changed_at")
+      .eq("user_id", user.id)
+      .order("changed_at", { ascending: false });
+    setBioHistory(data || []);
+    setShowHistory(!showHistory);
+  };
 
   return (
     <Layout>
@@ -229,19 +332,49 @@ const Profile = () => {
           {bioSections.length > 0 && (
             <Card className="mt-4">
               <CardContent className="py-5 space-y-5">
-                <h2 className="font-display text-base font-semibold">My Story</h2>
+                <div className="flex items-center justify-between">
+                  <h2 className="font-display text-base font-semibold">My Story</h2>
+                  {isOwn && !editing && (
+                    <div className="flex gap-2">
+                      <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground" onClick={loadHistory}>
+                        <History className="h-4 w-4" /> History
+                      </Button>
+                      <Button variant="ghost" size="sm" className="gap-1" onClick={startEditing}>
+                        <Pencil className="h-4 w-4" /> Edit
+                      </Button>
+                    </div>
+                  )}
+                  {isOwn && editing && (
+                    <div className="flex gap-2">
+                      <Button variant="ghost" size="sm" onClick={cancelEditing} disabled={savingBio}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                      <Button variant="default" size="sm" className="gap-1" onClick={saveEdits} disabled={savingBio}>
+                        {savingBio ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Save
+                      </Button>
+                    </div>
+                  )}
+                </div>
                 {bioSections.map((section, i) => (
-                  <div key={section.title}>
+                  <div key={section.key}>
                     {i > 0 && <Separator className="mb-5" />}
                     <h3 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-2">
                       {section.title}
                     </h3>
-                    {section.content ? (
+                    {editing ? (
+                      <Textarea
+                        value={editBio[section.key] || ""}
+                        onChange={(e) => setEditBio((b) => ({ ...b, [section.key]: e.target.value }))}
+                        maxLength={section.key === "bio_what_i_am_doing" ? 400 : 300}
+                        rows={3}
+                        className="resize-none"
+                      />
+                    ) : section.content ? (
                       <p className="text-sm leading-relaxed">{section.content}</p>
                     ) : (
                       <p className="text-sm italic text-muted-foreground">
                         Not filled in yet.{" "}
-                        <Link to="/bio" className="text-accent hover:underline">Add it now →</Link>
+                        <button onClick={startEditing} className="text-accent hover:underline">Add it now →</button>
                       </p>
                     )}
                   </div>
@@ -250,8 +383,40 @@ const Profile = () => {
             </Card>
           )}
 
+          {/* History */}
+          {isOwn && showHistory && bioHistory.length > 0 && (
+            <Card className="mt-4">
+              <CardContent className="py-5 space-y-4">
+                <h2 className="font-display text-base font-semibold">Edit History</h2>
+                {bioHistory.map((entry, i) => (
+                  <div key={i} className="text-sm space-y-1">
+                    {i > 0 && <Separator className="mb-4" />}
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-muted-foreground uppercase tracking-wider text-xs">{entry.field_name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(entry.changed_at).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}
+                      </span>
+                    </div>
+                    {entry.old_value && (
+                      <p className="text-muted-foreground line-through">{entry.old_value}</p>
+                    )}
+                    <p>{entry.new_value}</p>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {isOwn && showHistory && bioHistory.length === 0 && (
+            <Card className="mt-4">
+              <CardContent className="py-6 text-center text-sm text-muted-foreground">
+                No edit history yet.
+              </CardContent>
+            </Card>
+          )}
+
           {/* Empty bio prompt for own profile */}
-          {isOwn && bioSections.every((s) => !s.content) && (
+          {isOwn && !editing && bioSections.every((s) => !s.content) && (
             <Card className="mt-4">
               <CardContent className="py-8 text-center">
                 <p className="text-sm text-muted-foreground mb-3">You haven't written your story yet.</p>
