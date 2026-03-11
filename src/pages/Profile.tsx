@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { MapPin, Mail, Phone, ArrowLeft, MessageCircle, Calendar, Pencil } from "lucide-react";
+import { MapPin, Mail, Phone, ArrowLeft, MessageCircle, Calendar, Pencil, Camera, Loader2 } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import GenerateTokenDialog from "@/components/GenerateTokenDialog";
 
