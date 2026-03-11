@@ -16,6 +16,7 @@ import Admin from "./pages/Admin";
 import Chat from "./pages/Chat";
 import Profile from "./pages/Profile";
 import ConnectToken from "./pages/ConnectToken";
+import ConnectionTimeline from "./pages/ConnectionTimeline";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
