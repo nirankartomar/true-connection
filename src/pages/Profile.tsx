@@ -416,6 +416,11 @@ const Profile = () => {
             </Card>
           )}
 
+          {/* Timed Photos */}
+          {targetUserId && (
+            <TimedPhotos userId={targetUserId} isOwn={isOwn} />
+          )}
+
           {/* Empty bio prompt for own profile */}
           {isOwn && !editing && bioSections.every((s) => !s.content) && (
             <Card className="mt-4">
