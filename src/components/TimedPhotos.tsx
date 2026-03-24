@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -9,6 +12,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ImagePlus, Loader2, Clock, Trash2, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +29,13 @@ interface TimedPhoto {
   duration_type: string;
   expires_at: string;
   created_at: string;
+  title: string | null;
+  caption: string | null;
+  location: string | null;
+  mood: string[];
+  tags: string[];
+  category: string;
+  privacy: string;
 }
 
 interface TimedPhotosProps {
@@ -31,6 +47,21 @@ const DURATION_OPTIONS = [
   { value: "1_hour", label: "1 Hour" },
   { value: "1_day", label: "1 Day" },
   { value: "1_week", label: "1 Week" },
+];
+
+const MOOD_OPTIONS = [
+  "Happy", "Calm", "Adventure", "Romantic", "Excited",
+  "Nostalgic", "Grateful", "Inspired", "Playful", "Peaceful",
+];
+
+const CATEGORY_OPTIONS = [
+  "Travel", "Food", "Nature", "Selfie", "Event",
+  "Friends", "Family", "Work", "Fitness", "Other",
+];
+
+const PRIVACY_OPTIONS = [
+  { value: "public", label: "Public" },
+  { value: "friends", label: "Friends" },
 ];
 
 function getExpiresAt(duration: string): string {
@@ -66,8 +97,20 @@ const TimedPhotos = ({ userId, isOwn }: TimedPhotosProps) => {
   const [photos, setPhotos] = useState<TimedPhoto[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [duration, setDuration] = useState("1_hour");
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+
+  // Upload dialog state
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [pendingPreview, setPendingPreview] = useState<string | null>(null);
+  const [duration, setDuration] = useState("1_hour");
+  const [title, setTitle] = useState("");
+  const [caption, setCaption] = useState("");
+  const [location, setLocation] = useState("");
+  const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
+  const [tagsInput, setTagsInput] = useState("");
+  const [category, setCategory] = useState("Other");
+  const [privacy, setPrivacy] = useState("public");
 
   const fetchPhotos = async () => {
     const { data } = await supabase
@@ -82,21 +125,56 @@ const TimedPhotos = ({ userId, isOwn }: TimedPhotosProps) => {
 
   useEffect(() => {
     fetchPhotos();
-    const interval = setInterval(fetchPhotos, 60000); // refresh every minute
+    const interval = setInterval(fetchPhotos, 60000);
     return () => clearInterval(interval);
   }, [userId]);
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const resetForm = () => {
+    setPendingFile(null);
+    setPendingPreview(null);
+    setDuration("1_hour");
+    setTitle("");
+    setCaption("");
+    setLocation("");
+    setSelectedMoods([]);
+    setTagsInput("");
+    setCategory("Other");
+    setPrivacy("public");
+    setShowUploadDialog(false);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setPendingFile(file);
+    setPendingPreview(URL.createObjectURL(file));
+    setShowUploadDialog(true);
+    e.target.value = "";
+  };
+
+  const toggleMood = (mood: string) => {
+    setSelectedMoods((prev) =>
+      prev.includes(mood) ? prev.filter((m) => m !== mood) : [...prev, mood]
+    );
+  };
+
+  const parseTags = (input: string): string[] =>
+    input
+      .split(/[\s,]+/)
+      .map((t) => t.replace(/^#/, "").trim())
+      .filter(Boolean)
+      .map((t) => `#${t}`);
+
+  const handleUpload = async () => {
+    if (!pendingFile) return;
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop() || "jpg";
+      const ext = pendingFile.name.split(".").pop() || "jpg";
       const storagePath = `${userId}/${Date.now()}.${ext}`;
 
       const { error: upErr } = await supabase.storage
         .from("timed-photos")
-        .upload(storagePath, file, { contentType: file.type });
+        .upload(storagePath, pendingFile, { contentType: pendingFile.type });
       if (upErr) throw upErr;
 
       const { data: urlData } = supabase.storage
@@ -104,6 +182,8 @@ const TimedPhotos = ({ userId, isOwn }: TimedPhotosProps) => {
         .getPublicUrl(storagePath);
 
       const expiresAt = getExpiresAt(duration);
+      const tags = parseTags(tagsInput);
+
       const { error: dbErr } = await supabase
         .from("profile_timed_photos")
         .insert({
@@ -112,10 +192,18 @@ const TimedPhotos = ({ userId, isOwn }: TimedPhotosProps) => {
           storage_path: storagePath,
           duration_type: duration,
           expires_at: expiresAt,
+          title: title.trim() || null,
+          caption: caption.trim() || null,
+          location: location.trim() || null,
+          mood: selectedMoods,
+          tags,
+          category,
+          privacy,
         });
       if (dbErr) throw dbErr;
 
       toast({ title: "Photo uploaded!" });
+      resetForm();
       fetchPhotos();
     } catch (err: any) {
       toast({
@@ -125,7 +213,6 @@ const TimedPhotos = ({ userId, isOwn }: TimedPhotosProps) => {
       });
     }
     setUploading(false);
-    e.target.value = "";
   };
 
   const handleDelete = async (photo: TimedPhoto) => {
@@ -138,6 +225,8 @@ const TimedPhotos = ({ userId, isOwn }: TimedPhotosProps) => {
 
   if (!isOwn && photos.length === 0) return null;
 
+  const viewingPhoto = photos.find((p) => p.id === selectedPhoto);
+
   return (
     <Card className="mt-4">
       <CardContent className="py-5 space-y-4">
@@ -147,44 +236,25 @@ const TimedPhotos = ({ userId, isOwn }: TimedPhotosProps) => {
             Timed Photos
           </h2>
           {isOwn && (
-            <div className="flex items-center gap-2">
-              <Select value={duration} onValueChange={setDuration}>
-                <SelectTrigger className="w-[110px] h-8 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {DURATION_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <label>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1 cursor-pointer"
-                  asChild
-                >
-                  <span>
-                    {uploading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <ImagePlus className="h-4 w-4" />
-                    )}
-                    Add
-                  </span>
-                </Button>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleUpload}
-                  disabled={uploading}
-                />
-              </label>
-            </div>
+            <label>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1 cursor-pointer"
+                asChild
+              >
+                <span>
+                  <ImagePlus className="h-4 w-4" />
+                  Add Photo
+                </span>
+              </Button>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileSelect}
+              />
+            </label>
           )}
         </div>
 
@@ -206,7 +276,7 @@ const TimedPhotos = ({ userId, isOwn }: TimedPhotosProps) => {
               >
                 <img
                   src={photo.photo_url}
-                  alt="Timed photo"
+                  alt={photo.title || "Timed photo"}
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-1.5 py-1">
@@ -233,8 +303,140 @@ const TimedPhotos = ({ userId, isOwn }: TimedPhotosProps) => {
           </div>
         )}
 
+        {/* Upload Dialog */}
+        <Dialog open={showUploadDialog} onOpenChange={(open) => { if (!open) resetForm(); }}>
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Add Timed Photo</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {pendingPreview && (
+                <img
+                  src={pendingPreview}
+                  alt="Preview"
+                  className="w-full h-48 object-cover rounded-lg"
+                />
+              )}
+
+              <div className="space-y-1.5">
+                <Label>Photo Title</Label>
+                <Input
+                  placeholder="e.g. Sunset in Goa"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  maxLength={100}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Caption / Description</Label>
+                <Textarea
+                  placeholder="What's happening or story behind the photo..."
+                  value={caption}
+                  onChange={(e) => setCaption(e.target.value)}
+                  maxLength={500}
+                  className="min-h-[60px]"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Location</Label>
+                <Input
+                  placeholder="City or place"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  maxLength={100}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Mood / Feel</Label>
+                <div className="flex flex-wrap gap-1.5">
+                  {MOOD_OPTIONS.map((mood) => (
+                    <Badge
+                      key={mood}
+                      variant={selectedMoods.includes(mood) ? "default" : "outline"}
+                      className="cursor-pointer text-xs"
+                      onClick={() => toggleMood(mood)}
+                    >
+                      {mood}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Tags</Label>
+                <Input
+                  placeholder="#travel #friends #beach"
+                  value={tagsInput}
+                  onChange={(e) => setTagsInput(e.target.value)}
+                  maxLength={200}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Category</Label>
+                  <Select value={category} onValueChange={setCategory}>
+                    <SelectTrigger className="h-9 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORY_OPTIONS.map((c) => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Privacy</Label>
+                  <Select value={privacy} onValueChange={setPrivacy}>
+                    <SelectTrigger className="h-9 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PRIVACY_OPTIONS.map((p) => (
+                        <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Duration</Label>
+                <Select value={duration} onValueChange={setDuration}>
+                  <SelectTrigger className="h-9 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DURATION_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button
+                onClick={handleUpload}
+                disabled={uploading}
+                className="w-full"
+              >
+                {uploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : null}
+                Upload Photo
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* Lightbox */}
-        {selectedPhoto && (
+        {viewingPhoto && (
           <div
             className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
             onClick={() => setSelectedPhoto(null)}
@@ -245,12 +447,43 @@ const TimedPhotos = ({ userId, isOwn }: TimedPhotosProps) => {
             >
               <X className="h-6 w-6" />
             </button>
-            <img
-              src={photos.find((p) => p.id === selectedPhoto)?.photo_url}
-              alt="Timed photo"
-              className="max-w-full max-h-[85vh] rounded-lg object-contain"
+            <div
+              className="max-w-lg w-full bg-background rounded-lg overflow-hidden"
               onClick={(e) => e.stopPropagation()}
-            />
+            >
+              <img
+                src={viewingPhoto.photo_url}
+                alt={viewingPhoto.title || "Timed photo"}
+                className="w-full max-h-[60vh] object-contain"
+              />
+              <div className="p-4 space-y-2">
+                {viewingPhoto.title && (
+                  <h3 className="font-semibold text-foreground">{viewingPhoto.title}</h3>
+                )}
+                {viewingPhoto.caption && (
+                  <p className="text-sm text-muted-foreground">{viewingPhoto.caption}</p>
+                )}
+                <div className="flex flex-wrap gap-1.5">
+                  {viewingPhoto.location && (
+                    <Badge variant="outline" className="text-xs">📍 {viewingPhoto.location}</Badge>
+                  )}
+                  <Badge variant="outline" className="text-xs">{viewingPhoto.category}</Badge>
+                  <Badge variant="secondary" className="text-xs">{timeRemaining(viewingPhoto.expires_at)}</Badge>
+                </div>
+                {viewingPhoto.mood?.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {viewingPhoto.mood.map((m) => (
+                      <Badge key={m} variant="default" className="text-xs">{m}</Badge>
+                    ))}
+                  </div>
+                )}
+                {viewingPhoto.tags?.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {viewingPhoto.tags.join(" ")}
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </CardContent>
