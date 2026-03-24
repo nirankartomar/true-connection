@@ -13,6 +13,7 @@ import { MapPin, Mail, Phone, ArrowLeft, MessageCircle, Calendar, Pencil, Camera
 import { toast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import GenerateTokenDialog from "@/components/GenerateTokenDialog";
+import TimedPhotos from "@/components/TimedPhotos";
 
 interface ProfileData {
   user_id: string;
