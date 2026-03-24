@@ -170,6 +170,36 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_timed_photos: {
+        Row: {
+          created_at: string
+          duration_type: string
+          expires_at: string
+          id: string
+          photo_url: string
+          storage_path: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_type: string
+          expires_at: string
+          id?: string
+          photo_url: string
+          storage_path: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_type?: string
+          expires_at?: string
+          id?: string
+          photo_url?: string
+          storage_path?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
